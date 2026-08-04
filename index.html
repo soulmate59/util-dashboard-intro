@@ -37,10 +37,10 @@
   .scene { display: none; width: 100%; max-width: 880px; margin: auto; flex-direction: column; align-items: center; }
   .scene.active { display: flex; }
 
-  .eyebrow { font-size: 11.5px; font-weight: 800; letter-spacing: .28em; padding-left: .28em; color: var(--primary); text-transform: none; }
-  h1 { font-size: clamp(21px, 4.6vw, 30px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.35; margin: 10px 0 0; text-wrap: balance; }
+  .eyebrow { font-size: clamp(12.5px, 2.6vw, 14px); font-weight: 800; letter-spacing: .22em; padding-left: .22em; color: var(--primary); text-transform: none; }
+  h1 { font-size: clamp(24px, 5vw, 34px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.35; margin: 10px 0 0; text-wrap: balance; }
   h1 .hl { color: var(--primary-dark); }
-  .sub { font-size: clamp(13px, 2.6vw, 14.5px); color: var(--muted); line-height: 1.7; margin: 14px 0 0; max-width: 560px; }
+  .sub { font-size: clamp(15px, 3vw, 16px); color: var(--muted); line-height: 1.7; margin: 14px 0 0; max-width: 580px; }
 
   .logo {
     width: 64px; height: 64px; border-radius: 18px; display: grid; place-items: center;
@@ -58,12 +58,12 @@
   .num.red { background: #fef2f2; color: #ef4444; }
   .num.blue { background: rgba(219,234,254,.7); color: var(--primary-dark); }
   .num.green { background: #f0fdf4; color: var(--ok); }
-  .item b { font-size: 15px; }
-  .item .desc { display: block; font-size: 12.5px; color: var(--muted); margin-top: 3px; line-height: 1.65; }
+  .item b { font-size: 16.5px; }
+  .item .desc { display: block; font-size: 13.5px; color: var(--muted); margin-top: 4px; line-height: 1.65; }
   .item .when { flex-shrink: 0; border-radius: 8px; background: rgba(219,234,254,.7); color: var(--primary-dark); font-weight: 700; font-size: 11.5px; padding: 4px 10px; margin-top: 2px; white-space: nowrap; }
 
   .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
-  .chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(191,219,254,.9); background: rgba(219,234,254,.6); color: var(--primary-dark); border-radius: 999px; padding: 6px 14px; font-size: 12.5px; font-weight: 600; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(191,219,254,.9); background: rgba(219,234,254,.6); color: var(--primary-dark); border-radius: 999px; padding: 7px 15px; font-size: 13.5px; font-weight: 600; }
   .chip::before { content: "✓"; font-weight: 800; color: var(--ok); }
 
   /* 4분류 바 */
@@ -95,24 +95,24 @@
   @media (max-width: 620px) { .personas { grid-template-columns: 1fr; } }
   .persona { display: flex; align-items: flex-start; gap: 12px; padding: 15px 18px; text-align: left; }
   .persona .ic { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; font-size: 16px; flex-shrink: 0; }
-  .persona b { font-size: 14.5px; }
-  .persona .desc { display: block; font-size: 12.5px; color: var(--muted); margin-top: 3px; line-height: 1.6; }
+  .persona b { font-size: 16px; }
+  .persona .desc { display: block; font-size: 13.5px; color: var(--muted); margin-top: 4px; line-height: 1.6; }
 
   /* 변화 before→after */
   .shift { display: flex; align-items: center; gap: 12px; padding: 13px 20px; text-align: left; }
-  .shift .before { flex: 1; font-size: 13.5px; color: var(--faint); text-decoration: line-through; text-decoration-color: rgba(148,163,184,.6); }
+  .shift .before { flex: 1; font-size: 14.5px; color: var(--faint); text-decoration: line-through; text-decoration-color: rgba(148,163,184,.6); }
   .shift .arrow { width: 28px; height: 28px; border-radius: 999px; background: var(--subtle); color: var(--primary-dark); display: grid; place-items: center; font-weight: 800; flex-shrink: 0; }
-  .shift .after { flex: 1; font-size: 13.5px; font-weight: 700; color: var(--primary-dark); }
+  .shift .after { flex: 1; font-size: 14.5px; font-weight: 700; color: var(--primary-dark); }
   @media (max-width: 560px) { .shift { flex-direction: column; align-items: flex-start; gap: 6px; } .shift .arrow { display: none; } }
 
   /* 실데이터 카드 */
   .stats4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; width: 100%; max-width: 840px; margin-top: 24px; }
   @media (max-width: 760px) { .stats4 { grid-template-columns: 1fr 1fr; } }
   .big { padding: 16px 18px; text-align: left; }
-  .big .l { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .big .l { font-size: 13px; font-weight: 600; color: var(--muted); }
   .big .v { font-size: clamp(24px, 5vw, 30px); font-weight: 800; font-variant-numeric: tabular-nums; margin-top: 6px; line-height: 1; }
   .big .v.warn { color: var(--warn); }
-  .big .s { font-size: 11.5px; color: var(--muted); margin-top: 7px; line-height: 1.5; }
+  .big .s { font-size: 12.5px; color: var(--muted); margin-top: 7px; line-height: 1.5; }
 
   .cta-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 30px; }
   .btn { border: 0; cursor: pointer; border-radius: 12px; padding: 13px 26px; font-size: 14.5px; font-weight: 700; font-family: inherit; transition: transform .15s, box-shadow .15s; }
@@ -297,10 +297,22 @@
     <p class="sub rise" style="animation-delay:3s">자주 볼수록 숫자는 더 정확해지고, 회의는 짧아집니다.</p>
   </section>
 
-  <!-- ⑪ 마무리 -->
+  <!-- ⑪ 우리의 약속 -->
+  <section class="scene" data-ms="9000">
+    <div class="eyebrow rise">우리의 약속</div>
+    <h1 class="rise" style="animation-delay:.45s">감시가 아니라, <span class="hl">투명함</span>입니다</h1>
+    <div class="list">
+      <div class="card item rise" style="animation-delay:.4s"><span class="num blue">✓</span><span><b>평가 도구가 아닙니다</b><span class="desc">개인의 순위를 매기기 위한 것이 아니라, 재배치·인력 보강·수주 판단을 돕기 위한 경영 도구입니다.</span></span></div>
+      <div class="card item rise" style="animation-delay:1.25s"><span class="num blue">✓</span><span><b>모두에게 같은 숫자</b><span class="desc">경영진이 보는 숫자를 구성원도 봅니다. 내 가동률이 어떻게 계산되는지 원천 기록까지 숨기지 않습니다.</span></span></div>
+      <div class="card item rise" style="animation-delay:2.1s"><span class="num blue">✓</span><span><b>기록이 곧 보호</b><span class="desc">초과근무가 숫자로 보여야 인력 보강 결정이 나옵니다. 기록은 통제가 아니라, 나를 지키는 근거입니다.</span></span></div>
+    </div>
+    <p class="sub rise" style="animation-delay:3s">도구는 사람을 향할 때, 가장 좋은 도구가 됩니다.</p>
+  </section>
+
+  <!-- ⑫ 마무리 -->
   <section class="scene" data-ms="0">
     <div class="logo pop" style="width:72px;height:72px;font-size:34px">實</div>
-    <h1 class="rise" style="animation-delay:.45s;font-size:clamp(26px,5.5vw,36px)">보이니까 관리되고,<br><span class="hl">관리되니까 좋아집니다</span></h1>
+    <h1 class="rise" style="animation-delay:.45s;font-size:clamp(28px,6vw,40px)">보이니까 관리되고,<br><span class="hl">관리되니까 좋아집니다</span></h1>
     <p class="sub rise" style="animation-delay:.95s">실(實) 가동률 대시보드 — 한솔PNS IT부문의 리소스를 한 화면에서.</p>
     <div class="cta-row rise" style="animation-delay:1.25s">
       <button class="btn btn-primary" id="replay">처음부터 다시 보기</button>
