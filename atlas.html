@@ -1,0 +1,907 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>실 가동률 대시보드 — 프로젝트 아틀라스: 90일의 기록</title>
+<meta name="description" content="수주부터 오픈까지 90일 — 민준·서연·김 팀장·R봇이 함께 완주한 프로젝트 아틀라스의 기록. 5개 챕터의 시네마틱 스토리. 약 3분 30초.">
+<meta property="og:title" content="실 가동률 대시보드 — 프로젝트 아틀라스: 90일의 기록">
+<meta property="og:description" content="수주부터 오픈까지 90일, 데이터가 사람을 지킨 이야기. 약 3분 30초.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Cdefs%3E%3ClinearGradient%20id='g'%20x1='0'%20y1='0'%20x2='1'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%233b82f6'/%3E%3Cstop%20offset='1'%20stop-color='%230ea5e9'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width='64'%20height='64'%20rx='14'%20fill='url(%23g)'/%3E%3Ctext%20x='32'%20y='44'%20font-size='34'%20font-weight='bold'%20text-anchor='middle'%20fill='white'%20font-family='sans-serif'%3ER%3C/text%3E%3C/svg%3E">
+<style>*, *::before, *::after { box-sizing: border-box; }</style>
+</head>
+<body>
+<style>
+  :root {
+    --bg: #f6f8fb; --surface: #ffffff; --line: #e5eaf1;
+    --ink: #0f172a; --muted: #64748b; --faint: #94a3b8;
+    --primary: #3b82f6; --primary-dark: #1d4ed8; --accent: #0ea5e9;
+    --subtle: #dbeafe; --tint: #eff6ff; --ok: #16a34a; --warn: #d97706; --bad: #ef4444;
+  }
+  html, body { height: 100%; }
+  body {
+    margin: 0; overflow: hidden; color: var(--ink);
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", system-ui, sans-serif;
+    letter-spacing: -0.011em; -webkit-font-smoothing: antialiased;
+    background:
+      radial-gradient(1100px 480px at 85% -10%, rgba(59,130,246,.10), transparent 60%),
+      radial-gradient(900px 420px at -10% 0%, rgba(14,165,233,.08), transparent 55%),
+      var(--bg);
+  }
+  .blob { position: fixed; border-radius: 50%; filter: blur(80px); animation: drift 16s ease-in-out infinite; pointer-events: none; }
+  @keyframes drift { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(46px,32px) scale(1.12); } 66% { transform: translate(-34px,22px) scale(.94); } }
+
+  /* 상단 메뉴 — 영상 그룹 드롭다운 */
+  #menu { position: fixed; top: 14px; right: 16px; z-index: 30; display: flex; align-items: center; gap: 8px; }
+  #menu .brand { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 15px; background: linear-gradient(135deg, #3b82f6, #0ea5e9); box-shadow: 0 4px 14px rgba(59,130,246,.35); }
+  #menu details { position: relative; }
+  #menu summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 999px; background: rgba(255,255,255,.85); border: 1px solid var(--line); backdrop-filter: blur(8px); font-size: 13px; font-weight: 700; color: var(--ink); box-shadow: 0 2px 10px rgba(15,23,42,.06); }
+  #menu summary::-webkit-details-marker { display: none; }
+  #menu summary::after { content: "▾"; font-size: 11px; color: var(--faint); }
+  #menu details[open] summary::after { content: "▴"; }
+  #menu .dd { position: absolute; right: 0; top: calc(100% + 8px); min-width: 190px; display: flex; flex-direction: column; gap: 2px; padding: 6px; border-radius: 14px; background: rgba(255,255,255,.97); border: 1px solid var(--line); box-shadow: 0 12px 32px rgba(15,23,42,.12); }
+  #menu .dd a { text-decoration: none; color: var(--muted); font-size: 13px; font-weight: 700; padding: 9px 12px; border-radius: 9px; display: flex; align-items: center; gap: 8px; }
+  #menu .dd a:hover { background: var(--tint); color: var(--ink); }
+  #menu .dd a.on { background: var(--primary); color: #fff; }
+  #menu .dd .new { margin-left: auto; font-size: 9.5px; font-weight: 800; color: #fff; background: #ef4444; border-radius: 6px; padding: 2px 6px; }
+  @media (max-width: 560px) { #menu { top: 10px; right: 10px; } }
+
+  #stage { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px 20px 132px; overflow-y: auto; }
+  .scene { display: none; width: 100%; max-width: 900px; margin: auto; flex-direction: column; align-items: center; }
+  .scene.active { display: flex; }
+
+  .eyebrow { font-size: clamp(12.5px, 2.6vw, 14px); font-weight: 800; letter-spacing: .22em; padding-left: .22em; color: var(--primary); }
+  h1 { font-size: clamp(22px, 4.6vw, 31px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.35; margin: 10px 0 0; text-wrap: balance; }
+  h1 .hl { color: var(--primary-dark); }
+  h1 .bad { color: var(--bad); }
+  h1 .good { color: var(--ok); }
+  .sub { font-size: clamp(14px, 2.8vw, 15.5px); color: var(--muted); line-height: 1.7; margin: 12px 0 0; max-width: 620px; }
+
+  .logo { width: 64px; height: 64px; border-radius: 18px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 30px; background: linear-gradient(135deg, #3b82f6, #0ea5e9); box-shadow: 0 12px 36px rgba(59,130,246,.4); margin-bottom: 14px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 1px 3px rgba(15,23,42,.06); }
+
+  /* ═══ 무대 세트 — 사무실 (낮/노을/밤) ═══ */
+  .set { position: relative; width: 100%; max-width: 700px; height: clamp(250px, 42vh, 320px); margin-top: 18px; border-radius: 20px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 14px 40px -18px rgba(15,23,42,.25); background: linear-gradient(#f2f6fb 62%, #e3ebf4 62%); }
+  .set .win { position: absolute; top: 26px; left: 34px; width: 128px; height: 96px; border-radius: 10px; border: 5px solid #dbe4ef; overflow: hidden; box-shadow: 0 4px 14px rgba(15,23,42,.08); }
+  .set .win::after { content: ""; position: absolute; inset: 0; margin: auto; width: 4px; background: #dbe4ef; }
+  .set .sky { position: absolute; inset: 0; }
+  .set.day .sky { background: linear-gradient(#bfdcff, #e6f2ff 70%); }
+  .set.day .sun { position: absolute; top: 12px; right: 14px; width: 22px; height: 22px; border-radius: 99px; background: #fcd34d; box-shadow: 0 0 18px rgba(252,211,77,.9); }
+  .set.dusk { background: linear-gradient(#f7f0e9 62%, #e9e0d6 62%); }
+  .set.dusk .sky { background: linear-gradient(#f9b17e, #fcd9a8 75%); }
+  .set.dusk .sun { position: absolute; bottom: 8px; left: 18px; width: 20px; height: 20px; border-radius: 99px; background: #fb923c; box-shadow: 0 0 16px rgba(251,146,60,.85); }
+  .set.night { background: linear-gradient(#232c3f 62%, #1a2233 62%); border-color: #2e3a52; }
+  .set.night .sky { background: linear-gradient(#0f1b33, #1d3054 80%); }
+  .set.night .moon { position: absolute; top: 10px; right: 16px; width: 18px; height: 18px; border-radius: 99px; background: #f1f5f9; box-shadow: 0 0 14px rgba(241,245,249,.7); }
+  .set.night .star { position: absolute; width: 3px; height: 3px; border-radius: 99px; background: #cbd5e1; animation: twinkle 2.6s ease-in-out infinite; }
+  @keyframes twinkle { 0%,100% { opacity: .25; } 50% { opacity: 1; } }
+  .set .floorline { position: absolute; left: 0; right: 0; bottom: 38%; border-top: 0; }
+  .set .plant { position: absolute; bottom: 16px; left: 22px; }
+  .set .deskrow { position: absolute; bottom: 14px; left: 0; right: 0; display: flex; justify-content: center; gap: clamp(16px, 6vw, 60px); align-items: flex-end; }
+  .set .cap { position: absolute; top: 14px; right: 16px; font-size: 11px; font-weight: 800; color: var(--faint); letter-spacing: .12em; }
+  .set.night .cap { color: #64748b; }
+
+  /* 책상 + 노트북 (캐릭터 하반신을 가리는 전경 소품) */
+  .desk { position: relative; width: 168px; display: flex; flex-direction: column; align-items: center; }
+  .desk .person { margin-bottom: -58px; z-index: 1; position: relative; }
+  .desk .top { width: 100%; height: 12px; border-radius: 6px; background: #b48a5f; box-shadow: 0 4px 10px rgba(15,23,42,.15); z-index: 2; position: relative; }
+  .desk .leg { position: absolute; bottom: -0px; width: 8px; height: 34px; background: #9a744e; border-radius: 3px; z-index: 0; }
+  .desk .front { width: 92%; height: 34px; background: linear-gradient(#a87f55, #96714b); border-radius: 0 0 10px 10px; z-index: 2; position: relative; }
+  .desk .laptop { position: absolute; top: -26px; z-index: 3; }
+  .typing .laptop .scr { animation: scrflicker 1.1s steps(2) infinite; }
+  @keyframes scrflicker { 50% { opacity: .75; } }
+
+  /* 캐릭터 공통 모션 */
+  .bob { animation: bob 2.8s ease-in-out infinite; }
+  .bob2 { animation: bob 2.8s ease-in-out -1.4s infinite; }
+  .bob3 { animation: bob 2.8s ease-in-out -0.7s infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  .droop { animation: droop 3.4s ease-in-out infinite; transform-origin: 50% 92%; }
+  @keyframes droop { 0%,100% { transform: rotate(0) translateY(0); } 50% { transform: rotate(-2.2deg) translateY(2px); } }
+  .cheer { animation: cheer .9s cubic-bezier(.3,1.6,.4,1) infinite alternate; }
+  @keyframes cheer { from { transform: translateY(0); } to { transform: translateY(-12px); } }
+  .floaty { animation: floaty 3.4s ease-in-out infinite; }
+  @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  .sweat { animation: sweat 2.2s ease-in infinite; opacity: 0; }
+  @keyframes sweat { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 70% { transform: translateY(14px); opacity: 1; } 100% { transform: translateY(20px); opacity: 0; } }
+  .ringbell { transform-origin: 50% 8%; animation: ringbell 1s ease-in-out infinite; }
+  @keyframes ringbell { 0%,100% { transform: rotate(0); } 20% { transform: rotate(14deg); } 40% { transform: rotate(-12deg); } 60% { transform: rotate(8deg); } 80% { transform: rotate(-6deg); } }
+  .blinkred { animation: blinkred 1.1s steps(2) infinite; }
+  @keyframes blinkred { 50% { opacity: .25; } }
+  .sparkle { animation: sparkle 1.8s ease-in-out infinite; transform-origin: center; }
+  @keyframes sparkle { 0%,100% { transform: scale(.6); opacity: .3; } 50% { transform: scale(1.1); opacity: 1; } }
+
+  /* 말풍선 */
+  .bubble { position: absolute; background: var(--surface); border: 1.5px solid var(--line); border-radius: 13px; padding: 8px 13px; font-size: 12.5px; font-weight: 700; color: var(--ink); box-shadow: 0 3px 10px rgba(15,23,42,.10); z-index: 5; white-space: nowrap; }
+  .bubble::after { content: ""; position: absolute; bottom: -7px; left: 22px; width: 12px; height: 12px; background: inherit; border-right: 1.5px solid var(--line); border-bottom: 1.5px solid var(--line); transform: rotate(45deg); background: var(--surface); }
+  .bubble.r::after { left: auto; right: 22px; }
+  .bubble.warn { border-color: #fecaca; background: #fef2f2; color: #b91c1c; } .bubble.warn::after { background: #fef2f2; border-color: #fecaca; }
+  .bubble.good { border-color: #bbf7d0; background: #f0fdf4; color: #15803d; } .bubble.good::after { background: #f0fdf4; border-color: #bbf7d0; }
+
+  /* 챕터 카드 */
+  .chapter { width: 100%; max-width: 660px; margin-top: 10px; padding: clamp(34px, 7vh, 54px) 30px; border-radius: 24px; color: #fff; position: relative; overflow: hidden; background: linear-gradient(135deg, #1d4ed8 0%, #0ea5e9 100%); box-shadow: 0 24px 60px -24px rgba(29,78,216,.55); }
+  .chapter.dark { background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); }
+  .chapter.red { background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 100%); box-shadow: 0 24px 60px -24px rgba(220,38,38,.5); }
+  .chapter.green { background: linear-gradient(135deg, #14532d 0%, #16a34a 100%); box-shadow: 0 24px 60px -24px rgba(22,163,74,.5); }
+  .chapter .big { position: absolute; right: 14px; bottom: -26px; font-size: 130px; font-weight: 800; opacity: .14; line-height: 1; }
+  .chapter .no { font-size: 12.5px; font-weight: 800; letter-spacing: .3em; opacity: .8; }
+  .chapter .tt { font-size: clamp(26px, 5.4vw, 36px); font-weight: 800; margin-top: 8px; letter-spacing: -0.02em; }
+  .chapter .dday { display: inline-flex; margin-top: 14px; padding: 6px 14px; border-radius: 999px; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.35); font-size: 13px; font-weight: 800; letter-spacing: .06em; }
+
+  /* 등장인물 카드 */
+  .cast { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; width: 100%; max-width: 760px; margin-top: 20px; }
+  @media (max-width: 680px) { .cast { grid-template-columns: repeat(2, 1fr); } }
+  .cast .c { padding: 14px 8px 12px; text-align: center; }
+  .cast .nm { font-size: 13.5px; font-weight: 800; margin-top: 6px; }
+  .cast .rl { font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.5; }
+
+  /* 인포그래픽 */
+  .info { width: 100%; max-width: 640px; margin-top: 16px; padding: 15px 18px; text-align: left; }
+  .info .cap { font-size: 11.5px; font-weight: 700; color: var(--muted); margin-bottom: 9px; }
+  .hbar { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .hbar .who { width: 76px; font-size: 12px; font-weight: 800; text-align: right; flex-shrink: 0; }
+  .hbar .track { flex: 1; height: 16px; border-radius: 99px; background: #eef2f7; overflow: hidden; position: relative; }
+  .hbar .fill { display: block; height: 100%; border-radius: 99px; transform-origin: left; }
+  .hbar .pct { width: 52px; font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+  .goalline { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); opacity: .45; }
+  .grow { transform: scaleX(0); }
+  .active .grow { animation: grow .8s cubic-bezier(.2,1,.5,1) forwards; }
+  @keyframes grow { to { transform: scaleX(1); } }
+  .draw path, .draw polyline { stroke-dasharray: 600; stroke-dashoffset: 600; }
+  .active .draw path, .active .draw polyline { animation: dashdraw 2.2s ease-out forwards; }
+  @keyframes dashdraw { to { stroke-dashoffset: 0; } }
+
+  /* 인력 카드 이동 (리밸런싱) */
+  .flycard { position: absolute; z-index: 6; padding: 5px 10px; border-radius: 9px; background: #fff; border: 1.5px solid var(--subtle); box-shadow: 0 6px 16px rgba(59,130,246,.25); font-size: 11px; font-weight: 800; color: var(--primary-dark); animation: flycard 3s ease-in-out infinite; }
+  @keyframes flycard { 0% { left: 12%; top: 44%; opacity: 0; transform: scale(.7); } 15% { opacity: 1; transform: scale(1); } 80% { left: 66%; top: 44%; opacity: 1; } 100% { left: 66%; top: 44%; opacity: 0; transform: scale(.8); } }
+
+  /* 컨페티 */
+  .confetti { position: absolute; top: -12px; width: 8px; height: 12px; border-radius: 2px; opacity: 0; animation: confall 2.8s linear infinite; }
+  @keyframes confall { 0% { transform: translateY(0) rotate(0); opacity: 0; } 8% { opacity: 1; } 100% { transform: translateY(340px) rotate(560deg); opacity: .9; } }
+
+  /* 체크 스탬프 */
+  .checkrow { display: flex; flex-direction: column; gap: 9px; margin-top: 6px; }
+  .checkrow .ck { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 700; color: var(--ink); }
+  .checkrow .bx { width: 24px; height: 24px; border-radius: 8px; border: 2px solid #cbd5e1; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 13px; flex-shrink: 0; }
+  .active .ck.done .bx { animation: stampin .5s cubic-bezier(.3,1.6,.4,1) forwards; background: var(--ok); border-color: var(--ok); }
+  .ck.done .bx { transform: scale(0); }
+  .ck:nth-child(1).done .bx { animation-delay: 1.0s !important; }
+  .ck:nth-child(2).done .bx { animation-delay: 1.7s !important; }
+  .ck:nth-child(3).done .bx { animation-delay: 2.4s !important; }
+  @keyframes stampin { to { transform: scale(1); } }
+
+  .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 18px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(191,219,254,.9); background: rgba(219,234,254,.6); color: var(--primary-dark); border-radius: 999px; padding: 7px 15px; font-size: 13px; font-weight: 600; }
+  .chip::before { content: "✓"; font-weight: 800; color: var(--ok); }
+
+  .cta-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 26px; }
+  .btn { border: 0; cursor: pointer; border-radius: 12px; padding: 13px 26px; font-size: 14.5px; font-weight: 700; font-family: inherit; text-decoration: none; display: inline-block; transition: transform .15s, box-shadow .15s; }
+  .btn:focus-visible, .ctrl:focus-visible, .segbtn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 1px 2px rgba(37,99,235,.35); }
+  .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+  .btn-ghost { background: var(--surface); color: var(--ink); border: 1px solid #cbd5e1; }
+  .btn-ghost:hover { border-color: var(--primary); color: var(--primary); background: var(--tint); }
+  .fine { font-size: 12px; color: var(--faint); margin-top: 16px; line-height: 1.6; }
+
+  /* 컨트롤 바 */
+  #bar { position: fixed; left: 0; right: 0; bottom: 0; padding: 40px 16px calc(16px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, rgba(246,248,251,.95) 45%); }
+  #bar .inner { max-width: 760px; margin: 0 auto; }
+  #segs { display: flex; gap: 3px; margin-bottom: 12px; }
+  .segbtn { flex: 1; height: 6px; border: 0; padding: 0; border-radius: 99px; background: rgba(203,213,225,.7); overflow: hidden; cursor: pointer; }
+  .segbtn .fillbar { display: block; height: 100%; width: 0; border-radius: 99px; background: var(--primary); }
+  @keyframes segfill { from { width: 0; } to { width: 100%; } }
+  #ctrls { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+  .ctrl { border: 0; background: none; cursor: pointer; color: var(--muted); border-radius: 9px; padding: 7px; display: grid; place-items: center; font-family: inherit; }
+  .ctrl:hover { background: var(--tint); color: var(--ink); }
+  .ctrl:disabled { opacity: .3; cursor: default; }
+  .ctrl svg { display: block; }
+  #count { font-size: 11.5px; font-variant-numeric: tabular-nums; margin-left: 2px; }
+  #hint { font-size: 11.5px; color: var(--faint); margin-left: 10px; }
+  @media (max-width: 560px) { #hint { display: none; } }
+  #skipend { margin-left: auto; border: 0; background: none; cursor: pointer; font-family: inherit; font-size: 12.5px; font-weight: 700; color: var(--muted); display: inline-flex; align-items: center; gap: 4px; padding: 6px 8px; border-radius: 8px; }
+  #skipend:hover { color: var(--ink); background: var(--tint); }
+
+  /* 장면 등장 모션 */
+  .rise { opacity: 0; transform: translateY(18px); }
+  .active .rise { animation: rise .9s cubic-bezier(.2,1,.5,1) forwards; }
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+  .active .pop { animation: pop 1s cubic-bezier(.2,1.2,.4,1) forwards; }
+  .pop { opacity: 0; transform: scale(.5); }
+  @keyframes pop { to { opacity: 1; transform: scale(1); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .blob, .bob, .bob2, .bob3, .droop, .cheer, .floaty, .sweat, .ringbell, .blinkred, .sparkle, .flycard, .confetti, .star, .typing .laptop .scr { animation: none !important; }
+    .rise, .pop, .grow { opacity: 1; transform: none; animation: none !important; }
+    .draw path, .draw polyline { stroke-dashoffset: 0 !important; animation: none !important; }
+    .ck.done .bx { transform: scale(1); animation: none !important; }
+    .confetti { display: none; }
+  }
+</style>
+
+<div class="blob" style="width:460px;height:460px;left:-10%;top:-16%;background:rgba(59,130,246,.16)"></div>
+<div class="blob" style="width:420px;height:420px;right:-8%;top:-10%;background:rgba(14,165,233,.14);animation-delay:-5s"></div>
+<div class="blob" style="width:520px;height:520px;left:30%;bottom:-32%;background:rgba(59,130,246,.12);animation-delay:-9s"></div>
+
+<!-- ═══ 캐릭터 스프라이트 라이브러리 (숨김 defs) ═══ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- 민준 (파랑 셔츠, 7년 차 개발자) -->
+    <g id="mj-stand">
+      <ellipse cx="55" cy="153" rx="24" ry="4.5" fill="rgba(15,23,42,.10)"/>
+      <rect x="41" y="116" width="11" height="32" rx="5" fill="#334155"/><rect x="58" y="116" width="11" height="32" rx="5" fill="#334155"/>
+      <rect x="38" y="145" width="16" height="7" rx="3.5" fill="#1e293b"/><rect x="56" y="145" width="16" height="7" rx="3.5" fill="#1e293b"/>
+      <rect x="32" y="62" width="46" height="58" rx="16" fill="#3b82f6"/>
+      <path d="M55 62 l-7 9 h14 z" fill="#dbeafe"/>
+      <rect x="20" y="66" width="11" height="37" rx="5.5" fill="#2f6fe0"/><rect x="79" y="66" width="11" height="37" rx="5.5" fill="#2f6fe0"/>
+      <circle cx="25.5" cy="106" r="5" fill="#fbd7b5"/><circle cx="84.5" cy="106" r="5" fill="#fbd7b5"/>
+      <circle cx="55" cy="34" r="25" fill="#fbd7b5"/>
+      <path d="M30 30 a25 25 0 0 1 50 0 v-8 a25 17 0 0 0 -50 0 z" fill="#3f3a36"/>
+      <path d="M36 19 q9 -7 21 -5" stroke="#57534e" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+      <path d="M43 30 q3.5 -2.5 7 0 M60 30 q3.5 -2.5 7 0" stroke="#3f3a36" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <circle cx="46.5" cy="36" r="2.7" fill="#1c1917"/><circle cx="63.5" cy="36" r="2.7" fill="#1c1917"/>
+      <path d="M49 46 q6 5.5 12 0" stroke="#1c1917" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      <circle cx="38" cy="42" r="3.4" fill="rgba(244,114,182,.35)"/><circle cx="72" cy="42" r="3.4" fill="rgba(244,114,182,.35)"/>
+    </g>
+    <g id="mj-tired">
+      <ellipse cx="55" cy="153" rx="24" ry="4.5" fill="rgba(15,23,42,.10)"/>
+      <rect x="41" y="116" width="11" height="32" rx="5" fill="#334155"/><rect x="58" y="116" width="11" height="32" rx="5" fill="#334155"/>
+      <rect x="38" y="145" width="16" height="7" rx="3.5" fill="#1e293b"/><rect x="56" y="145" width="16" height="7" rx="3.5" fill="#1e293b"/>
+      <rect x="32" y="62" width="46" height="58" rx="16" fill="#3b82f6"/>
+      <path d="M55 62 l-7 9 h14 z" fill="#dbeafe"/>
+      <rect x="20" y="70" width="11" height="37" rx="5.5" fill="#2f6fe0"/><rect x="79" y="70" width="11" height="37" rx="5.5" fill="#2f6fe0"/>
+      <circle cx="25.5" cy="110" r="5" fill="#fbd7b5"/><circle cx="84.5" cy="110" r="5" fill="#fbd7b5"/>
+      <circle cx="55" cy="36" r="25" fill="#fbd7b5"/>
+      <path d="M30 32 a25 25 0 0 1 50 0 v-8 a25 17 0 0 0 -50 0 z" fill="#3f3a36"/>
+      <path d="M43 31 q3.5 1.5 7 .5 M60 31.5 q3.5 -1 7 -.5" stroke="#3f3a36" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <path d="M43 37.5 h7 M60 37.5 h7" stroke="#1c1917" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M44 42.5 q3 2 6 1 M60 43.5 q3 1 6 -1" stroke="#c4a488" stroke-width="1.7" fill="none" stroke-linecap="round"/>
+      <path d="M49 50 q6 -3.5 12 0" stroke="#1c1917" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    </g>
+    <g id="mj-cheer">
+      <ellipse cx="55" cy="153" rx="24" ry="4.5" fill="rgba(15,23,42,.10)"/>
+      <rect x="41" y="116" width="11" height="32" rx="5" fill="#334155"/><rect x="58" y="116" width="11" height="32" rx="5" fill="#334155"/>
+      <rect x="38" y="145" width="16" height="7" rx="3.5" fill="#1e293b"/><rect x="56" y="145" width="16" height="7" rx="3.5" fill="#1e293b"/>
+      <rect x="32" y="62" width="46" height="58" rx="16" fill="#3b82f6"/>
+      <path d="M55 62 l-7 9 h14 z" fill="#dbeafe"/>
+      <rect x="14" y="34" width="11" height="37" rx="5.5" fill="#2f6fe0" transform="rotate(24 19.5 52)"/>
+      <rect x="85" y="34" width="11" height="37" rx="5.5" fill="#2f6fe0" transform="rotate(-24 90.5 52)"/>
+      <circle cx="14" cy="32" r="5" fill="#fbd7b5"/><circle cx="96" cy="32" r="5" fill="#fbd7b5"/>
+      <circle cx="55" cy="34" r="25" fill="#fbd7b5"/>
+      <path d="M30 30 a25 25 0 0 1 50 0 v-8 a25 17 0 0 0 -50 0 z" fill="#3f3a36"/>
+      <path d="M43 29 q3.5 -3 7 -.5 M60 28.5 q3.5 -2.5 7 .5" stroke="#3f3a36" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <path d="M43 36 q3.5 3.5 7 0 M60 36 q3.5 3.5 7 0" stroke="#1c1917" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M47 45 q8 8 16 0" stroke="#1c1917" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <circle cx="38" cy="41" r="3.6" fill="rgba(244,114,182,.4)"/><circle cx="72" cy="41" r="3.6" fill="rgba(244,114,182,.4)"/>
+    </g>
+    <!-- 서연 (틸 셔츠, 신입) -->
+    <g id="sy-stand">
+      <ellipse cx="55" cy="153" rx="24" ry="4.5" fill="rgba(15,23,42,.10)"/>
+      <rect x="41" y="116" width="11" height="32" rx="5" fill="#3f4a5c"/><rect x="58" y="116" width="11" height="32" rx="5" fill="#3f4a5c"/>
+      <rect x="38" y="145" width="16" height="7" rx="3.5" fill="#7c3f2c"/><rect x="56" y="145" width="16" height="7" rx="3.5" fill="#7c3f2c"/>
+      <rect x="32" y="62" width="46" height="58" rx="16" fill="#0d9488"/>
+      <path d="M55 62 l-7 9 h14 z" fill="#ccfbf1"/>
+      <rect x="20" y="66" width="11" height="37" rx="5.5" fill="#0b7f74"/><rect x="79" y="66" width="11" height="37" rx="5.5" fill="#0b7f74"/>
+      <circle cx="25.5" cy="106" r="5" fill="#fde3c8"/><circle cx="84.5" cy="106" r="5" fill="#fde3c8"/>
+      <circle cx="55" cy="34" r="25" fill="#fde3c8"/>
+      <path d="M30 33 a25 25 0 0 1 50 0 v-10 a25 18 0 0 0 -50 0 z" fill="#6b4a2f"/>
+      <path d="M30 33 q-5 17 2 28" stroke="#6b4a2f" stroke-width="7.5" fill="none" stroke-linecap="round"/>
+      <path d="M80 33 q5 17 -2 28" stroke="#6b4a2f" stroke-width="7.5" fill="none" stroke-linecap="round"/>
+      <path d="M37 20 q9 -6 20 -5" stroke="#8a6844" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      <path d="M43 30 q3.5 -2.5 7 0 M60 30 q3.5 -2.5 7 0" stroke="#4e3620" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <circle cx="46.5" cy="36" r="2.7" fill="#1c1917"/><circle cx="63.5" cy="36" r="2.7" fill="#1c1917"/>
+      <path d="M49 46 q6 5.5 12 0" stroke="#1c1917" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      <circle cx="38" cy="42" r="3.4" fill="rgba(244,114,182,.4)"/><circle cx="72" cy="42" r="3.4" fill="rgba(244,114,182,.4)"/>
+    </g>
+    <g id="sy-note">
+      <use href="#sy-stand"/>
+      <rect x="60" y="92" width="26" height="19" rx="3.5" fill="#fff" stroke="#cbd5e1" stroke-width="2" transform="rotate(-8 73 101)"/>
+      <path d="M65 97 h14 M65 102 h11" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round" transform="rotate(-8 73 101)"/>
+    </g>
+    <g id="sy-cheer">
+      <ellipse cx="55" cy="153" rx="24" ry="4.5" fill="rgba(15,23,42,.10)"/>
+      <rect x="41" y="116" width="11" height="32" rx="5" fill="#3f4a5c"/><rect x="58" y="116" width="11" height="32" rx="5" fill="#3f4a5c"/>
+      <rect x="38" y="145" width="16" height="7" rx="3.5" fill="#7c3f2c"/><rect x="56" y="145" width="16" height="7" rx="3.5" fill="#7c3f2c"/>
+      <rect x="32" y="62" width="46" height="58" rx="16" fill="#0d9488"/>
+      <path d="M55 62 l-7 9 h14 z" fill="#ccfbf1"/>
+      <rect x="14" y="34" width="11" height="37" rx="5.5" fill="#0b7f74" transform="rotate(24 19.5 52)"/>
+      <rect x="85" y="34" width="11" height="37" rx="5.5" fill="#0b7f74" transform="rotate(-24 90.5 52)"/>
+      <circle cx="14" cy="32" r="5" fill="#fde3c8"/><circle cx="96" cy="32" r="5" fill="#fde3c8"/>
+      <circle cx="55" cy="34" r="25" fill="#fde3c8"/>
+      <path d="M30 33 a25 25 0 0 1 50 0 v-10 a25 18 0 0 0 -50 0 z" fill="#6b4a2f"/>
+      <path d="M30 33 q-5 17 2 28" stroke="#6b4a2f" stroke-width="7.5" fill="none" stroke-linecap="round"/>
+      <path d="M80 33 q5 17 -2 28" stroke="#6b4a2f" stroke-width="7.5" fill="none" stroke-linecap="round"/>
+      <path d="M43 29 q3.5 -3 7 -.5 M60 28.5 q3.5 -2.5 7 .5" stroke="#4e3620" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <path d="M43 36 q3.5 3.5 7 0 M60 36 q3.5 3.5 7 0" stroke="#1c1917" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M47 45 q8 8 16 0" stroke="#1c1917" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <circle cx="38" cy="41" r="3.6" fill="rgba(244,114,182,.45)"/><circle cx="72" cy="41" r="3.6" fill="rgba(244,114,182,.45)"/>
+    </g>
+    <!-- 김 팀장 (그레이 수트 + 안경 + 넥타이) -->
+    <g id="kim-stand">
+      <ellipse cx="55" cy="153" rx="24" ry="4.5" fill="rgba(15,23,42,.10)"/>
+      <rect x="41" y="116" width="11" height="32" rx="5" fill="#1c1917"/><rect x="58" y="116" width="11" height="32" rx="5" fill="#1c1917"/>
+      <rect x="38" y="145" width="16" height="7" rx="3.5" fill="#0c0a09"/><rect x="56" y="145" width="16" height="7" rx="3.5" fill="#0c0a09"/>
+      <rect x="32" y="62" width="46" height="58" rx="16" fill="#475569"/>
+      <path d="M55 62 l-8 10 h16 z" fill="#f8fafc"/>
+      <path d="M55 66 l5 9 -5 30 -5 -30 z" fill="#dc2626"/>
+      <rect x="20" y="66" width="11" height="37" rx="5.5" fill="#3c4a5e"/><rect x="79" y="66" width="11" height="37" rx="5.5" fill="#3c4a5e"/>
+      <circle cx="25.5" cy="106" r="5" fill="#f5cfae"/><circle cx="84.5" cy="106" r="5" fill="#f5cfae"/>
+      <circle cx="55" cy="34" r="25" fill="#f5cfae"/>
+      <path d="M32 24 a25 25 0 0 1 46 0 q-11 -8 -23 -8 t-23 8 z" fill="#57534e"/>
+      <rect x="38" y="30" width="14" height="11" rx="4.5" fill="none" stroke="#1c1917" stroke-width="2"/>
+      <rect x="58" y="30" width="14" height="11" rx="4.5" fill="none" stroke="#1c1917" stroke-width="2"/>
+      <line x1="52" y1="34" x2="58" y2="34" stroke="#1c1917" stroke-width="2"/>
+      <circle cx="45" cy="35.5" r="2.4" fill="#1c1917"/><circle cx="65" cy="35.5" r="2.4" fill="#1c1917"/>
+      <path d="M49 46 q6 4.5 12 0" stroke="#1c1917" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    </g>
+    <g id="kim-think">
+      <ellipse cx="55" cy="153" rx="24" ry="4.5" fill="rgba(15,23,42,.10)"/>
+      <rect x="41" y="116" width="11" height="32" rx="5" fill="#1c1917"/><rect x="58" y="116" width="11" height="32" rx="5" fill="#1c1917"/>
+      <rect x="38" y="145" width="16" height="7" rx="3.5" fill="#0c0a09"/><rect x="56" y="145" width="16" height="7" rx="3.5" fill="#0c0a09"/>
+      <rect x="32" y="62" width="46" height="58" rx="16" fill="#475569"/>
+      <path d="M55 62 l-8 10 h16 z" fill="#f8fafc"/>
+      <path d="M55 66 l5 9 -5 30 -5 -30 z" fill="#dc2626"/>
+      <rect x="20" y="66" width="11" height="37" rx="5.5" fill="#3c4a5e"/>
+      <rect x="72" y="42" width="11" height="32" rx="5.5" fill="#3c4a5e" transform="rotate(-38 77.5 58)"/>
+      <circle cx="25.5" cy="106" r="5" fill="#f5cfae"/><circle cx="70" cy="49" r="5" fill="#f5cfae"/>
+      <circle cx="55" cy="34" r="25" fill="#f5cfae"/>
+      <path d="M32 24 a25 25 0 0 1 46 0 q-11 -8 -23 -8 t-23 8 z" fill="#57534e"/>
+      <rect x="38" y="30" width="14" height="11" rx="4.5" fill="none" stroke="#1c1917" stroke-width="2"/>
+      <rect x="58" y="30" width="14" height="11" rx="4.5" fill="none" stroke="#1c1917" stroke-width="2"/>
+      <line x1="52" y1="34" x2="58" y2="34" stroke="#1c1917" stroke-width="2"/>
+      <circle cx="45" cy="35.5" r="2.4" fill="#1c1917"/><circle cx="65" cy="35.5" r="2.4" fill="#1c1917"/>
+      <path d="M49 48 q6 -3 12 0" stroke="#1c1917" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    </g>
+    <g id="kim-cheer">
+      <ellipse cx="55" cy="153" rx="24" ry="4.5" fill="rgba(15,23,42,.10)"/>
+      <rect x="41" y="116" width="11" height="32" rx="5" fill="#1c1917"/><rect x="58" y="116" width="11" height="32" rx="5" fill="#1c1917"/>
+      <rect x="38" y="145" width="16" height="7" rx="3.5" fill="#0c0a09"/><rect x="56" y="145" width="16" height="7" rx="3.5" fill="#0c0a09"/>
+      <rect x="32" y="62" width="46" height="58" rx="16" fill="#475569"/>
+      <path d="M55 62 l-8 10 h16 z" fill="#f8fafc"/>
+      <path d="M55 66 l5 9 -5 30 -5 -30 z" fill="#dc2626"/>
+      <rect x="14" y="34" width="11" height="37" rx="5.5" fill="#3c4a5e" transform="rotate(24 19.5 52)"/>
+      <rect x="85" y="34" width="11" height="37" rx="5.5" fill="#3c4a5e" transform="rotate(-24 90.5 52)"/>
+      <circle cx="14" cy="32" r="5" fill="#f5cfae"/><circle cx="96" cy="32" r="5" fill="#f5cfae"/>
+      <circle cx="55" cy="34" r="25" fill="#f5cfae"/>
+      <path d="M32 24 a25 25 0 0 1 46 0 q-11 -8 -23 -8 t-23 8 z" fill="#57534e"/>
+      <rect x="38" y="30" width="14" height="11" rx="4.5" fill="none" stroke="#1c1917" stroke-width="2"/>
+      <rect x="58" y="30" width="14" height="11" rx="4.5" fill="none" stroke="#1c1917" stroke-width="2"/>
+      <line x1="52" y1="34" x2="58" y2="34" stroke="#1c1917" stroke-width="2"/>
+      <circle cx="45" cy="35.5" r="2.4" fill="#1c1917"/><circle cx="65" cy="35.5" r="2.4" fill="#1c1917"/>
+      <path d="M47 45 q8 7 16 0" stroke="#1c1917" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </g>
+    <!-- R봇 -->
+    <g id="rb">
+      <ellipse cx="75" cy="158" rx="30" ry="5" fill="rgba(15,23,42,.10)"/>
+      <line x1="75" y1="10" x2="75" y2="26" stroke="#64748b" stroke-width="3"/>
+      <circle cx="75" cy="9" r="6" fill="#0ea5e9"/>
+      <rect x="33" y="26" width="84" height="64" rx="18" fill="#3b82f6"/>
+      <rect x="43" y="38" width="64" height="40" rx="10" fill="#0b3a8c"/>
+      <circle cx="63" cy="54" r="5.5" fill="#fff"/><circle cx="87" cy="54" r="5.5" fill="#fff"/>
+      <path d="M60 66 q15 10 30 0" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <rect x="45" y="94" width="60" height="44" rx="14" fill="#e2e8f0"/>
+      <circle cx="75" cy="116" r="12" fill="#fff"/>
+      <text x="75" y="121" font-size="15" font-weight="800" fill="#1d4ed8" text-anchor="middle">R</text>
+      <rect x="17" y="96" width="24" height="10" rx="5" fill="#94a3b8"/><rect x="109" y="96" width="24" height="10" rx="5" fill="#94a3b8"/>
+      <circle cx="58" cy="148" r="9" fill="#334155"/><circle cx="92" cy="148" r="9" fill="#334155"/>
+    </g>
+    <g id="rb-alert">
+      <ellipse cx="75" cy="158" rx="30" ry="5" fill="rgba(15,23,42,.10)"/>
+      <line x1="75" y1="10" x2="75" y2="26" stroke="#64748b" stroke-width="3"/>
+      <circle cx="75" cy="9" r="6" fill="#ef4444"/>
+      <rect x="33" y="26" width="84" height="64" rx="18" fill="#3b82f6"/>
+      <rect x="43" y="38" width="64" height="40" rx="10" fill="#0b3a8c"/>
+      <path d="M57 50 l12 8 M69 50 l-12 8" stroke="#fca5a5" stroke-width="3" stroke-linecap="round" opacity="0"/>
+      <rect x="56" y="50" width="14" height="7" rx="3.5" fill="#fbbf24"/><rect x="80" y="50" width="14" height="7" rx="3.5" fill="#fbbf24"/>
+      <path d="M62 70 h26" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>
+      <rect x="45" y="94" width="60" height="44" rx="14" fill="#e2e8f0"/>
+      <circle cx="75" cy="116" r="12" fill="#fff"/>
+      <text x="75" y="121" font-size="15" font-weight="800" fill="#1d4ed8" text-anchor="middle">R</text>
+      <rect x="17" y="96" width="24" height="10" rx="5" fill="#94a3b8"/><rect x="109" y="96" width="24" height="10" rx="5" fill="#94a3b8"/>
+      <circle cx="58" cy="148" r="9" fill="#334155"/><circle cx="92" cy="148" r="9" fill="#334155"/>
+    </g>
+    <g id="rb-happy">
+      <ellipse cx="75" cy="158" rx="30" ry="5" fill="rgba(15,23,42,.10)"/>
+      <line x1="75" y1="10" x2="75" y2="26" stroke="#64748b" stroke-width="3"/>
+      <circle cx="75" cy="9" r="6" fill="#22c55e"/>
+      <rect x="33" y="26" width="84" height="64" rx="18" fill="#3b82f6"/>
+      <rect x="43" y="38" width="64" height="40" rx="10" fill="#0b3a8c"/>
+      <path d="M57 56 q6 -7 12 0 M81 56 q6 -7 12 0" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <path d="M58 66 q17 13 34 0" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <rect x="45" y="94" width="60" height="44" rx="14" fill="#e2e8f0"/>
+      <circle cx="75" cy="116" r="12" fill="#fff"/>
+      <text x="75" y="121" font-size="15" font-weight="800" fill="#1d4ed8" text-anchor="middle">R</text>
+      <rect x="14" y="66" width="24" height="10" rx="5" fill="#94a3b8" transform="rotate(35 26 71)"/>
+      <rect x="112" y="66" width="24" height="10" rx="5" fill="#94a3b8" transform="rotate(-35 124 71)"/>
+      <circle cx="58" cy="148" r="9" fill="#334155"/><circle cx="92" cy="148" r="9" fill="#334155"/>
+    </g>
+    <!-- 소품: 노트북 -->
+    <g id="laptop">
+      <rect x="0" y="0" width="46" height="28" rx="3" fill="#334155"/>
+      <rect class="scr" x="3" y="3" width="40" height="22" rx="2" fill="#60a5fa"/>
+      <rect x="-4" y="28" width="54" height="4" rx="2" fill="#475569"/>
+    </g>
+  </defs>
+</svg>
+
+<nav id="menu" aria-label="메뉴">
+  <span class="brand">R</span>
+  <details>
+    <summary>영상</summary>
+    <div class="dd">
+      <a href="index.html">소개 영상</a>
+      <a href="explainer.html">용어 사전</a>
+      <a href="history.html">히스토리</a>
+      <a href="story.html">스토리</a>
+      <a href="atlas.html" class="on" aria-current="page">프로젝트 90일<span class="new">NEW</span></a>
+    </div>
+  </details>
+</nav>
+
+<div id="stage">
+
+  <!-- ① 콜드오픈 -->
+  <section class="scene" data-ms="10000">
+    <div class="eyebrow rise">실 가동률 대시보드 오리지널 · 다섯 개의 챕터</div>
+    <h1 class="rise" style="animation-delay:.45s">프로젝트 아틀라스 —<br><span class="hl">90일의 기록</span></h1>
+    <div class="set night rise" style="animation-delay:.95s">
+      <span class="cap">D-90 · 밤 10시의 사무실</span>
+      <div class="win"><span class="sky"></span><span class="moon"></span></div>
+      <span class="star" style="top:40px;left:56px"></span><span class="star" style="top:56px;left:88px;animation-delay:-1.2s"></span><span class="star" style="top:38px;left:120px;animation-delay:-.6s"></span>
+      <div class="deskrow">
+        <svg class="floaty" width="118" height="126" viewBox="0 0 150 170"><use href="#rb"/></svg>
+      </div>
+      <div class="bubble" style="top:52px;right:70px">내일, 큰 이야기가 시작될 거예요</div>
+    </div>
+    <p class="sub rise" style="animation-delay:1.6s">이것은 가상의 프로젝트 이야기지만 — 어느 팀에서나 일어나는 이야기입니다.</p>
+  </section>
+
+  <!-- ② 등장인물 -->
+  <section class="scene" data-ms="10500">
+    <div class="eyebrow rise">등장인물</div>
+    <h1 class="rise" style="animation-delay:.4s">네 명이 함께 갑니다</h1>
+    <div class="cast">
+      <div class="card c rise" style="animation-delay:.6s">
+        <svg class="bob" width="82" height="112" viewBox="0 0 110 158"><use href="#mj-stand"/></svg>
+        <div class="nm">민준</div><div class="rl">개발 리드 · 7년 차<br>실력만큼 일이 몰린다</div>
+      </div>
+      <div class="card c rise" style="animation-delay:1.0s">
+        <svg class="bob2" width="82" height="112" viewBox="0 0 110 158"><use href="#sy-stand"/></svg>
+        <div class="nm">서연</div><div class="rl">신입 · 첫 프로젝트<br>기회를 기다려 왔다</div>
+      </div>
+      <div class="card c rise" style="animation-delay:1.4s">
+        <svg class="bob3" width="82" height="112" viewBox="0 0 110 158"><use href="#kim-stand"/></svg>
+        <div class="nm">김 팀장</div><div class="rl">PM · 결정하는 사람<br>이번엔 감이 아니라 데이터로</div>
+      </div>
+      <div class="card c rise" style="animation-delay:1.8s">
+        <svg class="floaty" width="86" height="112" viewBox="0 0 150 170"><use href="#rb"/></svg>
+        <div class="nm">R봇</div><div class="rl">실 가동률 대시보드<br>숫자로 사람을 지킨다</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ③ 1장 카드 -->
+  <section class="scene" data-ms="7500">
+    <div class="chapter pop">
+      <span class="big">1</span>
+      <div class="no">CHAPTER 1</div>
+      <div class="tt">수주 — 4초의 즉답</div>
+      <span class="dday">D-90</span>
+    </div>
+  </section>
+
+  <!-- ④ 미팅 -->
+  <section class="scene" data-ms="11000">
+    <div class="eyebrow rise">고객사 미팅룸</div>
+    <h1 class="rise" style="animation-delay:.4s">"석 달 안에 되겠습니까?"</h1>
+    <div class="set day rise" style="animation-delay:.9s">
+      <span class="cap">D-90 · 오전 11시</span>
+      <div class="win"><span class="sky"></span><span class="sun"></span></div>
+      <div class="bubble rise" style="top:36px;left:36%;animation-delay:1.4s">석 달 안에, 열두 명. 가능합니까?</div>
+      <div class="bubble good r rise" style="top:92px;right:12%;animation-delay:2.3s">네 — <b>지금 가용 열두 명</b>, 바로 시작합니다</div>
+      <div class="deskrow">
+        <svg class="bob" width="100" height="132" viewBox="0 0 110 158"><use href="#kim-stand"/></svg>
+        <div class="card" style="padding:10px 14px;text-align:left;margin-bottom:14px">
+          <div style="font-size:10px;font-weight:800;color:var(--faint)">R6 · 투입 가능</div>
+          <div style="font-size:22px;font-weight:800;color:var(--ok)">12명</div>
+          <div style="font-size:10px;color:var(--muted)">지금 기준 · 실시간</div>
+        </div>
+      </div>
+    </div>
+    <p class="sub rise" style="animation-delay:2.9s">나흘 걸리던 대답이 4초. 계약서에 도장이 찍혔고 — 90일의 카운트다운이 시작됐습니다.</p>
+  </section>
+
+  <!-- ⑤ 2장 카드 -->
+  <section class="scene" data-ms="7500">
+    <div class="chapter dark pop">
+      <span class="big">2</span>
+      <div class="no">CHAPTER 2</div>
+      <div class="tt">투입 — 사람을 고르다</div>
+      <span class="dday">D-89</span>
+    </div>
+  </section>
+
+  <!-- ⑥ 팀 빌딩 -->
+  <section class="scene" data-ms="11000">
+    <div class="eyebrow rise">R6 가용 명단 앞에서</div>
+    <h1 class="rise" style="animation-delay:.4s">감이 아니라 <span class="hl">데이터로 팀을</span> 짰습니다</h1>
+    <div class="card info rise" style="animation-delay:.9s">
+      <div class="cap">가용 인력 명단 — 스킬·가동률·투입 이력 기준 자동 추천</div>
+      <div class="hbar"><span class="who" style="color:#2563eb">민준</span><span class="track"><span class="fill grow" style="width:88%;background:#3b82f6;animation-delay:1.2s"></span></span><span class="pct">리드 ✓</span></div>
+      <div class="hbar"><span class="who" style="color:#0d9488">서연</span><span class="track"><span class="fill grow" style="width:40%;background:#14b8a6;animation-delay:1.6s"></span></span><span class="pct">합류 ✓</span></div>
+      <div class="hbar"><span class="who">+10명</span><span class="track"><span class="fill grow" style="width:70%;background:#94a3b8;animation-delay:2.0s"></span></span><span class="pct">배정 ✓</span></div>
+    </div>
+    <p class="sub rise" style="animation-delay:2.6s">저가동이던 서연에게 첫 프로젝트가 왔습니다 — 우연이 아니라,<br>R1 저가동 명단이 김 팀장의 화면에 떠 있었기 때문입니다.</p>
+  </section>
+
+  <!-- ⑦ 킥오프 -->
+  <section class="scene" data-ms="10500">
+    <div class="eyebrow rise">킥오프</div>
+    <h1 class="rise" style="animation-delay:.4s">계획은 <span class="hl">선 하나</span>로 시작됩니다</h1>
+    <div class="set day rise" style="animation-delay:.9s">
+      <span class="cap">D-87 · 회의실</span>
+      <div class="win"><span class="sky"></span><span class="sun"></span></div>
+      <div style="position:absolute;top:28px;left:50%;transform:translateX(-50%);width:270px" class="card">
+        <svg class="draw" width="270" height="110" viewBox="0 0 270 110" style="display:block">
+          <line x1="30" y1="90" x2="250" y2="90" stroke="#e2e8f0" stroke-width="2"/>
+          <line x1="30" y1="90" x2="30" y2="12" stroke="#e2e8f0" stroke-width="2"/>
+          <polyline points="30,20 250,86" stroke="#94a3b8" stroke-width="2.5" fill="none" stroke-dasharray="6 5"/>
+          <text x="36" y="24" font-size="10" font-weight="700" fill="#64748b">남은 일</text>
+          <text x="212" y="104" font-size="10" font-weight="700" fill="#64748b">D-0</text>
+        </svg>
+      </div>
+      <div class="deskrow">
+        <svg class="bob" width="92" height="122" viewBox="0 0 110 158"><use href="#kim-stand"/></svg>
+        <svg class="bob2" width="92" height="122" viewBox="0 0 110 158"><use href="#mj-stand"/></svg>
+        <svg class="bob3" width="92" height="122" viewBox="0 0 110 158"><use href="#sy-note"/></svg>
+      </div>
+    </div>
+    <p class="sub rise" style="animation-delay:1.8s">"이 선 아래로만 내려가면 됩니다." — 목표선은 단순했지만, 현실은 곧 복잡해집니다.</p>
+  </section>
+
+  <!-- ⑧ 3장 카드 -->
+  <section class="scene" data-ms="7500">
+    <div class="chapter pop">
+      <span class="big">3</span>
+      <div class="no">CHAPTER 3</div>
+      <div class="tt">질주 — 그리고 변수</div>
+      <span class="dday">D-60</span>
+    </div>
+  </section>
+
+  <!-- ⑨ 몰입 몽타주 -->
+  <section class="scene" data-ms="10500">
+    <div class="eyebrow rise">몰입의 나날</div>
+    <h1 class="rise" style="animation-delay:.4s">실적선이 목표선을 <span class="hl">따라잡기 시작합니다</span></h1>
+    <div class="set dusk rise" style="animation-delay:.9s">
+      <span class="cap">D-60 · 해질녘까지</span>
+      <div class="win"><span class="sky"></span><span class="sun"></span></div>
+      <div style="position:absolute;top:22px;left:50%;transform:translateX(-50%);width:250px" class="card">
+        <svg class="draw" width="250" height="96" viewBox="0 0 250 96" style="display:block">
+          <line x1="26" y1="80" x2="232" y2="80" stroke="#e2e8f0" stroke-width="2"/>
+          <polyline points="26,16 232,76" stroke="#94a3b8" stroke-width="2" fill="none" stroke-dasharray="6 5"/>
+          <polyline points="26,16 78,32 130,42" stroke="#3b82f6" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="deskrow">
+        <div class="desk typing">
+          <div class="person"><svg class="bob" width="86" height="116" viewBox="0 0 110 158"><use href="#mj-stand"/></svg></div>
+          <div class="top"></div>
+          <svg class="laptop" width="54" height="34" viewBox="-4 0 54 34"><use href="#laptop"/></svg>
+          <div class="front"></div>
+        </div>
+        <div class="desk typing">
+          <div class="person"><svg class="bob2" width="86" height="116" viewBox="0 0 110 158"><use href="#sy-stand"/></svg></div>
+          <div class="top"></div>
+          <svg class="laptop" width="54" height="34" viewBox="-4 0 54 34"><use href="#laptop"/></svg>
+          <div class="front"></div>
+        </div>
+      </div>
+    </div>
+    <p class="sub rise" style="animation-delay:1.8s">서연의 커밋이 하루하루 늘었고, 민준의 리뷰는 정확했습니다. 순항 — 이라고 모두 믿었습니다.</p>
+  </section>
+
+  <!-- ⑩ 변수 -->
+  <section class="scene" data-ms="10500">
+    <div class="eyebrow rise">그리고 변수</div>
+    <h1 class="rise" style="animation-delay:.4s">"이 기능도 <span class="bad">추가</span>해 주세요"</h1>
+    <div class="set dusk rise" style="animation-delay:.9s">
+      <span class="cap">D-52 · 변경 요청</span>
+      <div class="win"><span class="sky"></span><span class="sun"></span></div>
+      <div style="position:absolute;top:22px;left:50%;transform:translateX(-50%);width:250px" class="card">
+        <svg class="draw" width="250" height="96" viewBox="0 0 250 96" style="display:block">
+          <line x1="26" y1="80" x2="232" y2="80" stroke="#e2e8f0" stroke-width="2"/>
+          <polyline points="26,16 232,76" stroke="#94a3b8" stroke-width="2" fill="none" stroke-dasharray="6 5"/>
+          <polyline points="26,16 78,32 130,42 156,30" stroke="#ef4444" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+          <text x="160" y="24" font-size="11" font-weight="800" fill="#ef4444">+범위</text>
+        </svg>
+      </div>
+      <div class="deskrow">
+        <svg class="droop" width="96" height="126" viewBox="0 0 110 158"><use href="#kim-think"/></svg>
+      </div>
+      <div class="bubble warn" style="bottom:96px;right:14%">일정은 그대로, 일은 늘었다…</div>
+    </div>
+    <p class="sub rise" style="animation-delay:1.8s">남은 일이 도로 늘었습니다. 그리고 늘어난 일은, 언제나 잘하는 사람에게 먼저 몰립니다.</p>
+  </section>
+
+  <!-- ⑪ 4장 카드 -->
+  <section class="scene" data-ms="7500">
+    <div class="chapter red pop">
+      <span class="big">4</span>
+      <div class="no">CHAPTER 4</div>
+      <div class="tt">경보 — 숫자가 사람을 지키다</div>
+      <span class="dday">D-45</span>
+    </div>
+  </section>
+
+  <!-- ⑫ R2 경보 -->
+  <section class="scene" data-ms="11000">
+    <div class="eyebrow rise">밤 11시, 알림 센터</div>
+    <h1 class="rise" style="animation-delay:.4s"><span class="bad">R2 과가동</span> — 민준, 5주 연속 초과</h1>
+    <div class="set night rise" style="animation-delay:.9s">
+      <span class="cap">D-45 · 밤 11시</span>
+      <div class="win"><span class="sky"></span><span class="moon"></span></div>
+      <span class="star" style="top:40px;left:60px"></span><span class="star" style="top:58px;left:96px;animation-delay:-1.4s"></span>
+      <div class="deskrow">
+        <div class="desk typing">
+          <div class="person"><svg class="droop" width="86" height="116" viewBox="0 0 110 158"><use href="#mj-tired"/></svg></div>
+          <div class="top"></div>
+          <svg class="laptop" width="54" height="34" viewBox="-4 0 54 34"><use href="#laptop"/></svg>
+          <div class="front"></div>
+        </div>
+        <svg class="floaty" width="104" height="126" viewBox="0 0 150 170"><use href="#rb-alert"/></svg>
+      </div>
+      <div class="card blinkred" style="position:absolute;top:26px;right:20px;padding:10px 14px;text-align:left;border-color:#fecaca;background:#fef2f2">
+        <div style="font-size:10px;font-weight:800;color:#b91c1c">⚠ R2 과가동 경보</div>
+        <div style="font-size:13.5px;font-weight:800;color:#7f1d1d;margin-top:3px">민준 — 주 52시간 초과 5주째</div>
+      </div>
+    </div>
+    <p class="sub rise" style="animation-delay:1.9s">민준은 "괜찮다"고 말했을 겁니다. 늘 그랬으니까요.<br>하지만 이번엔 — 본인이 말하기 전에 화면이 먼저 말했습니다.</p>
+  </section>
+
+  <!-- ⑬ 리밸런싱 -->
+  <section class="scene" data-ms="11000">
+    <div class="eyebrow rise">다음 날 아침, R7 리밸런싱</div>
+    <h1 class="rise" style="animation-delay:.4s">한 사람의 짐을, <span class="good">팀의 계획으로</span></h1>
+    <div class="set day rise" style="animation-delay:.9s">
+      <span class="cap">D-44 · 오전 9시</span>
+      <div class="win"><span class="sky"></span><span class="sun"></span></div>
+      <span class="flycard">모듈 B → 지원 2명</span>
+      <div class="deskrow">
+        <svg class="bob" width="90" height="120" viewBox="0 0 110 158"><use href="#mj-stand"/></svg>
+        <svg class="floaty" width="98" height="120" viewBox="0 0 150 170"><use href="#rb"/></svg>
+        <svg class="bob2" width="90" height="120" viewBox="0 0 110 158"><use href="#sy-stand"/></svg>
+      </div>
+      <div class="bubble good" style="top:30px;left:12%">R7 제안: 가용 2명 즉시 투입 가능</div>
+    </div>
+    <div class="card info rise" style="animation-delay:1.7s;max-width:560px">
+      <div class="hbar"><span class="who" style="color:#2563eb">민준 (재조정)</span><span class="track"><span class="goalline" style="left:85%"></span><span class="fill grow" style="width:84%;background:#3b82f6;animation-delay:2.0s"></span></span><span class="pct">84%</span></div>
+      <div class="hbar"><span class="who" style="color:#0d9488">서연 (성장)</span><span class="track"><span class="goalline" style="left:85%"></span><span class="fill grow" style="width:79%;background:#14b8a6;animation-delay:2.4s"></span></span><span class="pct">79%</span></div>
+    </div>
+  </section>
+
+  <!-- ⑭ 5장 카드 -->
+  <section class="scene" data-ms="7500">
+    <div class="chapter green pop">
+      <span class="big">5</span>
+      <div class="no">CHAPTER 5</div>
+      <div class="tt">완주 — 그리고 오픈</div>
+      <span class="dday">D-7</span>
+    </div>
+  </section>
+
+  <!-- ⑮ 검수 -->
+  <section class="scene" data-ms="10500">
+    <div class="eyebrow rise">검수 주간 · 서연이 앞에 섰습니다</div>
+    <h1 class="rise" style="animation-delay:.4s">첫 프로젝트의 신입이<br><span class="hl">검수를 이끕니다</span></h1>
+    <div class="set day rise" style="animation-delay:.9s">
+      <span class="cap">D-7 · 검수 리허설</span>
+      <div class="win"><span class="sky"></span><span class="sun"></span></div>
+      <div class="card" style="position:absolute;top:24px;right:22px;padding:12px 16px;text-align:left">
+        <div class="checkrow">
+          <div class="ck done"><span class="bx">✓</span>기능 시나리오 통과</div>
+          <div class="ck done"><span class="bx">✓</span>성능 목표 충족</div>
+          <div class="ck done"><span class="bx">✓</span>보안 점검 완료</div>
+        </div>
+      </div>
+      <div class="deskrow">
+        <svg class="bob" width="92" height="122" viewBox="0 0 110 158"><use href="#sy-note"/></svg>
+        <svg class="bob3" width="88" height="118" viewBox="0 0 110 158"><use href="#kim-stand"/></svg>
+      </div>
+    </div>
+    <p class="sub rise" style="animation-delay:1.8s">석 달 전 가동률 40%였던 신입이, 지금 체크리스트를 넘기고 있습니다.</p>
+  </section>
+
+  <!-- ⑯ D-0 오픈 -->
+  <section class="scene" data-ms="11000">
+    <div class="eyebrow rise">D-0 · 오픈</div>
+    <h1 class="rise" style="animation-delay:.4s"><span class="good">정시 오픈.</span> 한 명도 지치지 않고.</h1>
+    <div class="set day rise" style="animation-delay:.9s">
+      <span class="cap">D-0 · 오후 2시</span>
+      <div class="win"><span class="sky"></span><span class="sun"></span></div>
+      <span class="confetti" style="left:12%;background:#3b82f6"></span>
+      <span class="confetti" style="left:24%;background:#f59e0b;animation-delay:.5s"></span>
+      <span class="confetti" style="left:38%;background:#ef4444;animation-delay:1.1s"></span>
+      <span class="confetti" style="left:52%;background:#22c55e;animation-delay:.3s"></span>
+      <span class="confetti" style="left:66%;background:#0ea5e9;animation-delay:.9s"></span>
+      <span class="confetti" style="left:78%;background:#a855f7;animation-delay:1.5s"></span>
+      <span class="confetti" style="left:90%;background:#f43f5e;animation-delay:.7s"></span>
+      <div class="deskrow">
+        <svg class="cheer" width="92" height="122" viewBox="0 0 110 158"><use href="#mj-cheer"/></svg>
+        <svg class="cheer" style="animation-delay:.2s" width="92" height="122" viewBox="0 0 110 158"><use href="#sy-cheer"/></svg>
+        <svg class="cheer" style="animation-delay:.4s" width="92" height="122" viewBox="0 0 110 158"><use href="#kim-cheer"/></svg>
+        <svg class="floaty" width="98" height="120" viewBox="0 0 150 170"><use href="#rb-happy"/></svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑰ 성과 -->
+  <section class="scene" data-ms="10500">
+    <div class="eyebrow rise">90일의 결산</div>
+    <h1 class="rise" style="animation-delay:.4s">숫자로 남은 <span class="hl">세 가지</span></h1>
+    <div class="card info rise" style="animation-delay:.9s">
+      <div class="hbar"><span class="who">일정 준수</span><span class="track"><span class="fill grow" style="width:100%;background:#16a34a;animation-delay:1.2s"></span></span><span class="pct" style="color:var(--ok)">100%</span></div>
+      <div class="hbar"><span class="who">초과근무</span><span class="track"><span class="fill grow" style="width:38%;background:#3b82f6;animation-delay:1.6s"></span></span><span class="pct" style="color:var(--primary-dark)">-38%</span></div>
+      <div class="hbar"><span class="who">신입 완주</span><span class="track"><span class="fill grow" style="width:100%;background:#14b8a6;animation-delay:2.0s"></span></span><span class="pct" style="color:#0d9488">1명 ✓</span></div>
+    </div>
+    <p class="sub rise" style="animation-delay:2.5s">번아웃 직전의 리드는 저녁을 되찾았고, 기회가 없던 신입은 이력서 첫 줄을 얻었습니다.<br>그리고 팀장은 — 한 번도 감으로 결정하지 않았습니다.</p>
+  </section>
+
+  <!-- ⑱ 교훈 -->
+  <section class="scene" data-ms="9500">
+    <div class="eyebrow rise">에필로그</div>
+    <h1 class="rise" style="animation-delay:.4s">숫자가 사람을 지키면,<br><span class="hl">사람은 목표를 지킵니다</span></h1>
+    <div class="chips">
+      <span class="chip rise" style="animation-delay:1.2s">경보가 번아웃을 막았다 · R2</span>
+      <span class="chip rise" style="animation-delay:1.6s">명단이 기회를 만들었다 · R1→R6</span>
+      <span class="chip rise" style="animation-delay:2.0s">제안이 완주를 이끌었다 · R7</span>
+    </div>
+    <p class="sub rise" style="animation-delay:2.5s">프로젝트 아틀라스는 가상의 이야기입니다.<br>하지만 R1부터 R7까지 — 도구는 오늘 우리 대시보드에 전부 실재합니다.</p>
+  </section>
+
+  <!-- ⑲ 엔딩 -->
+  <section class="scene" data-ms="0">
+    <div class="logo pop">R</div>
+    <h1 class="rise" style="animation-delay:.45s;font-size:clamp(28px,6vw,40px)">당신 팀의 90일도,<br><span class="hl">기록될 준비가 되어 있습니다</span></h1>
+    <div class="castrow rise" style="display:flex;gap:18px;margin-top:18px;animation-delay:.9s">
+      <svg class="bob" width="62" height="86" viewBox="0 0 110 158"><use href="#mj-stand"/></svg>
+      <svg class="bob2" width="62" height="86" viewBox="0 0 110 158"><use href="#sy-stand"/></svg>
+      <svg class="bob3" width="62" height="86" viewBox="0 0 110 158"><use href="#kim-stand"/></svg>
+      <svg class="floaty" width="66" height="86" viewBox="0 0 150 170"><use href="#rb-happy"/></svg>
+    </div>
+    <div class="cta-row rise" style="animation-delay:1.25s">
+      <button class="btn btn-primary" id="replay">처음부터 다시 보기</button>
+      <a class="btn btn-ghost" href="story.html">전편: 스토리 →</a>
+      <a class="btn btn-ghost" href="explainer.html">용어 사전 →</a>
+    </div>
+    <p class="fine rise" style="animation-delay:1.6s">등장인물과 프로젝트는 이해를 돕기 위한 가상이며, 관리 포인트(R1~R7)는 실제 기능입니다.<br>대시보드는 사내망 전용 — 접속 주소는 사내 공지로 안내됩니다.</p>
+  </section>
+</div>
+
+<!-- 컨트롤 바 -->
+<div id="bar">
+  <div class="inner">
+    <div id="segs"></div>
+    <div id="ctrls">
+      <button class="ctrl" id="prev" aria-label="이전 장면"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <button class="ctrl" id="pp" aria-label="일시정지"><svg id="ppIcon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg></button>
+      <button class="ctrl" id="next" aria-label="다음 장면"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+      <span id="count">1 / 19</span>
+      <span id="hint">Space 일시정지 · ←→ 이동 · 화면 좌/우 클릭으로 이동</span>
+      <button id="skipend">끝으로 ›</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var scenes = Array.prototype.slice.call(document.querySelectorAll(".scene"));
+  var N = scenes.length;
+  var segs = document.getElementById("segs");
+  var fills = [];
+  for (var i = 0; i < N; i++) {
+    var b = document.createElement("button");
+    b.className = "segbtn";
+    b.setAttribute("aria-label", (i + 1) + "장면으로 이동");
+    var f = document.createElement("span");
+    f.className = "fillbar";
+    b.appendChild(f);
+    (function (idx) { b.addEventListener("click", function () { show(idx); }); })(i);
+    segs.appendChild(b);
+    fills.push(f);
+  }
+
+  var cur = -1, paused = false, timer = null;
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function show(i) {
+    if (i < 0 || i >= N) return;
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (cur >= 0) scenes[cur].classList.remove("active");
+    cur = i;
+    var sc = scenes[cur];
+    // 리플로우로 등장 애니메이션 재시작
+    void sc.offsetWidth;
+    sc.classList.add("active");
+    document.getElementById("stage").scrollTop = 0;
+    document.getElementById("count").textContent = (cur + 1) + " / " + N;
+
+    for (var k = 0; k < N; k++) {
+      var f = fills[k];
+      f.style.animation = "none";
+      void f.offsetWidth;
+      if (k < cur) { f.style.width = "100%"; }
+      else if (k > cur) { f.style.width = "0"; }
+    }
+    var ms = parseInt(sc.getAttribute("data-ms"), 10);
+    var fc = fills[cur];
+    if (ms > 0 && !reduced) {
+      fc.style.width = "";
+      fc.style.animation = "segfill " + ms + "ms linear forwards";
+      fc.style.animationPlayState = paused ? "paused" : "running";
+    } else {
+      fc.style.width = "100%";
+    }
+    document.getElementById("prev").disabled = cur === 0;
+    document.getElementById("next").disabled = cur === N - 1;
+    document.getElementById("pp").style.display = ms > 0 ? "" : "none";
+    document.getElementById("skipend").style.display = cur === N - 1 ? "none" : "";
+    schedule();
+  }
+
+  function schedule() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    var ms = parseInt(scenes[cur].getAttribute("data-ms"), 10);
+    if (ms > 0 && !paused) timer = setTimeout(function () { show(cur + 1); }, ms);
+  }
+
+  function setPaused(p) {
+    paused = p;
+    var f = fills[cur];
+    f.style.animationPlayState = paused ? "paused" : "running";
+    document.getElementById("ppIcon").outerHTML = paused
+      ? '<svg id="ppIcon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'
+      : '<svg id="ppIcon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>';
+    document.getElementById("pp").setAttribute("aria-label", paused ? "재생" : "일시정지");
+    schedule();
+  }
+
+  document.getElementById("prev").addEventListener("click", function () { show(cur - 1); });
+  document.getElementById("next").addEventListener("click", function () { show(cur + 1); });
+  document.getElementById("pp").addEventListener("click", function () { setPaused(!paused); });
+  document.getElementById("skipend").addEventListener("click", function () { show(N - 1); });
+  document.getElementById("replay").addEventListener("click", function () { paused = false; show(0); });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowRight") show(cur + 1);
+    else if (e.key === "ArrowLeft") show(cur - 1);
+    else if (e.key === " ") { e.preventDefault(); setPaused(!paused); }
+  });
+
+  // 화면 좌/우 클릭으로 이동 — 왼쪽 절반은 이전, 오른쪽 절반은 다음 (버튼·링크 클릭은 제외)
+  document.getElementById("stage").addEventListener("click", function (e) {
+    if (e.target.closest("button, a")) return;
+    if (e.clientX >= window.innerWidth / 2) show(cur + 1); else show(cur - 1);
+  });
+
+  // 모바일 스와이프
+  var tx = null;
+  document.addEventListener("touchstart", function (e) { tx = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener("touchend", function (e) {
+    if (tx == null) return;
+    var dx = e.changedTouches[0].clientX - tx;
+    if (Math.abs(dx) > 60) { if (dx < 0) show(cur + 1); else show(cur - 1); }
+    tx = null;
+  }, { passive: true });
+
+  // 메뉴 드롭다운 — 바깥 클릭 시 닫기
+  var dd = document.querySelector("#menu details");
+  document.addEventListener("click", function (e) {
+    if (dd && dd.open && !dd.contains(e.target)) dd.open = false;
+  });
+
+  show(0);
+})();
+</script>
+</body>
+</html>
